@@ -69,6 +69,14 @@ class Blockchain {
     let self = this;
     return new Promise(async (resolve, reject) => {
 
+      const isChainValided = await self.validateChain();
+      if (!isChainValided) {
+        reject(Error("the chain is not valid!!!"));
+        console.log("the chain is not valid!!!");
+      }
+
+      console.log("ok ja");
+
       block.height = self.height + 1;
       block.time = new Date().getTime().toString().slice(0, -3);
 
@@ -100,7 +108,7 @@ class Blockchain {
     return new Promise((resolve) => {
       // <WALLET_ADDRESS>:${new Date().getTime().toString().slice(0,-3)}:starRegistry
       var message = `${address}:${new Date().getTime().toString().slice(0,-3)}:starRegistry`;
-      console.log('requestMessageOwnership: ' + message);
+
       resolve(message);
     });
   }
@@ -170,7 +178,7 @@ class Blockchain {
   getBlockByHash(hash) {
     let self = this;
     return new Promise((resolve, reject) => {
-      const block = this.chain.filter((block) => block.hash === hash)[0];
+      const block = this.chain.find((block) => block.hash === hash);
       if (block) resolve(block);
       else resolve(null);
     });
@@ -184,7 +192,7 @@ class Blockchain {
   getBlockByHeight(height) {
     let self = this;
     return new Promise((resolve, reject) => {
-      let block = self.chain.filter((p) => p.height === height)[0];
+      let block = self.chain.find((p) => p.height === height);
       if (block) {
         resolve(block);
       } else {
@@ -222,11 +230,23 @@ class Blockchain {
     let self = this;
     let errorLog = [];
     return new Promise(async (resolve, reject) => {
-      self.chain.forEach(block => {
-        if (!block.validate()) {
-          errorLog.push(block);
+
+      let previousBlock = null;
+
+      for (let i = 0; i < self.chain.length; i++) {
+        let block = self.chain[i];
+        const isValid = await block.validate();
+        if (!isValid) {
+          errorLog.push("the block is not valid");
         }
-      });
+
+        if (previousBlock !== null) {
+          if (block.previousBlockHash !== previousBlock.hash) {
+            errorLog.push("the previous block hash does not the same as the current block hash");
+          }
+        }
+        previousBlock = block;
+      }
       resolve(errorLog)
     });
   }
